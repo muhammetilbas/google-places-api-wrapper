@@ -259,4 +259,49 @@ class Client
 
         return $body['suggestions'];
     }
+
+
+/**
+ * Retrieve the URI for a place photo using the Google Places API.
+ *
+ * This method fetches the photo URI for a given photo reference. It supports
+ * specifying maximum dimensions for the photo and includes error handling.
+ * The method returns the direct photo URI that can be used to display the image.
+ *
+ * @param string $photo_reference The photo reference string from a Place Details result
+ * @param int $max_width Optional. The maximum width of the photo in pixels. Default 1024
+ * @param int $max_height Optional. The maximum height of the photo in pixels. Default 1024
+ * 
+ * @return string|null The photo URI if successful, null if the request fails or the response is invalid
+ * 
+ * @throws GuzzleException When there's an HTTP client error
+ */
+public function get_photo(string $photo_reference, int $max_width = 1024, int $max_height = 1024): ?string 
+{
+    if (empty($photo_reference)) {
+        return null;
+    }
+
+    $url = self::API_URL . $photo_reference . '/media';
+
+    try {
+        $response = $this->client->get($url, [
+            'query' => [
+                'maxWidthPx' => max(1, min($max_width, 4800)),  // Ensure width is between 1 and 4800
+                'maxHeightPx' => max(1, min($max_height, 4800)), // Ensure height is between 1 and 4800
+                'skipHttpRedirect' => 'true',
+            ],
+        ]);
+
+        $json = json_decode($response->getBody()->getContents(), true);
+        
+        return $json['photoUri'] ?? null;
+        
+    } catch (\Exception $e) {
+        // Log error if needed
+        // error_log("Google Places Photo Error: " . $e->getMessage());
+        return null;
+    }
+}
+    
 }
